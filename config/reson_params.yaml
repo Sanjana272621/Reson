@@ -1,0 +1,56 @@
+fft_node:
+  ros__parameters:
+    window_size: 1024          # samples per FFT window (zero-padded to next pow2 anyway)
+    hop_size: 1024             # 1024 = no overlap; e.g. 512 = 50% overlap
+    sample_rate_hz: 142.7      # fallback if auto_estimate_sample_rate finds no timing
+    auto_estimate_sample_rate: true
+    input_topic: reson/vibration_raw
+    output_topic: reson/fft_spectrum
+
+diagnosis_node:
+  ros__parameters:
+    input_topic: reson/fft_spectrum
+    diagnostic_name: motor_vibration
+    hardware_id: motor_1
+    min_freq_hz: 5.0            # ignore sensor drift/bias below this
+    peak_ratio: 0.10            # bin counts as a "peak" above 10% of in-band max
+    distance_scale: 3.0         # higher = more tolerant of drift from baseline
+
+    # Baseline "healthy motor" fingerprint - regenerate with
+    # scripts/compute_baseline.py against YOUR normal_*.csv recordings.
+    baseline:
+      std_dev: 1752.12
+      dominant_freq_hz: 25.92
+      dominant_mag: 190983.1
+      num_peaks: 857
+      energy_5_10: 8.2
+      energy_10_50: 57.2
+      energy_50_100: 26.2
+      energy_above_100: 0.0
+
+    # Per-feature normalization divisors for the baseline distance metric.
+    scale:
+      std_dev: 1500.0
+      dominant_freq_hz: 8.0
+      log_dominant_mag: 0.5
+      num_peaks: 250.0
+      energy_5_10: 10.0
+      energy_10_50: 15.0
+      energy_50_100: 15.0
+      energy_above_100: 5.0
+
+    # Rule-based severity thresholds (from the reference grinder-motor rig;
+    # tune to your own motor's normal operating spread).
+    thresholds:
+      std_dev_warning: 2000.0
+      std_dev_alert: 3000.0
+      std_dev_critical: 5000.0
+      freq_warning: 20.0
+      freq_alert: 16.0
+      freq_critical: 13.0
+      mag_warning: 200000.0
+      mag_alert: 400000.0
+      mag_critical: 1000000.0
+      peaks_warning: 700.0
+      peaks_alert: 500.0
+      peaks_critical: 300.0
